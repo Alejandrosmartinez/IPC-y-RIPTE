@@ -88,7 +88,8 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
   <div id="sync-bar" class="sync-bar">
     <span class="sync-dot"></span>
     <span id="sync-msg" style="flex:1">Tocá Actualizar para buscar los últimos índices.</span>
-    <button class="btn sm" onclick="fetchIndices()" style="white-space:nowrap"><i class="ti ti-refresh"></i> Actualizar</button>
+    <button class="btn sm" onclick="fetchIndices()" style="white-space:nowrap"><i class="ti ti-refresh"></i> Actualizar índices</button>
+    <button class="btn sm" onclick="location.reload(true)" title="Recargar la página ignorando el caché" style="white-space:nowrap"><i class="ti ti-reload"></i> Recargar app</button>
   </div>
   <div id="diag-box" style="display:none;font-size:12px;color:#5f5e5a;background:#f8f7f4;border:0.5px solid #d3d1c7;border-radius:8px;padding:10px 13px;margin:-8px 0 14px;font-family:ui-monospace,Menlo,monospace;line-height:1.5"></div>
 
