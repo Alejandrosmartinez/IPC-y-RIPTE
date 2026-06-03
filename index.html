@@ -59,8 +59,6 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
 .btn.primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
 .btn.primary:hover { background: #2c2c2a; }
 .btn.sm { padding: 5px 10px; font-size: 12px; }
-.add-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 12px; }
-@media (max-width: 560px) { .add-form { grid-template-columns: 1fr 1fr; } .add-form button { grid-column: 1/-1; } }
 .idx-scroll { max-height: 260px; overflow-y: auto; border: 0.5px solid #d3d1c7; border-radius: 8px; }
 .idx-table { width: 100%; border-collapse: collapse; }
 .idx-table th { font-size: 11px; color: #888780; text-transform: uppercase; letter-spacing: 0.06em; padding: 6px 10px; border-bottom: 0.5px solid #d3d1c7; text-align: left; position: sticky; top: 0; background: #fff; }
@@ -214,22 +212,12 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
         <p class="section-label">Índice RIPTE</p>
         <div class="idx-scroll"><table class="idx-table"><thead><tr><th>Fecha</th><th>Valor</th></tr></thead><tbody id="ripte-tbody"></tbody></table></div>
         <p class="last-upd" id="ripte-last"></p>
-        <div class="add-form">
-          <div class="field"><label style="font-size:12px">Mes</label><input type="month" id="add-ripte-mes"></div>
-          <div class="field"><label style="font-size:12px">Valor RIPTE</label><input type="number" id="add-ripte-val" placeholder="ej: 210000.00" step="0.01"></div>
-          <button class="btn primary" onclick="addIdx('ripte')">Agregar</button>
-        </div>
       </div>
 
       <div id="idxp-ipc" style="display:none">
         <p class="section-label">Índice IPC</p>
         <div class="idx-scroll"><table class="idx-table"><thead><tr><th>Fecha</th><th>Valor</th></tr></thead><tbody id="ipc-tbody"></tbody></table></div>
         <p class="last-upd" id="ipc-last"></p>
-        <div class="add-form">
-          <div class="field"><label style="font-size:12px">Mes</label><input type="month" id="add-ipc-mes"></div>
-          <div class="field"><label style="font-size:12px">Valor IPC</label><input type="number" id="add-ipc-val" placeholder="ej: 11500.00" step="0.01"></div>
-          <button class="btn primary" onclick="addIdx('ipc')">Agregar</button>
-        </div>
       </div>
     </div>
   </div>
@@ -271,40 +259,9 @@ function loadData() {
   ipcData   = buildData(IPC_BASE, 'ipc');
 }
 
-function isBaseRow(type, y, m) {
-  var base = type==='ripte'?RIPTE_BASE:IPC_BASE;
-  return base.some(function(r){ return r[0]===y&&r[1]===m; });
-}
-
 function saveExtra(type, row) {
   var arr = getStore(type+'_extra') || [];
   if (!arr.some(function(r){ return r[0]===row[0]&&r[1]===row[1]; })) { arr.push(row); setStore(type+'_extra', arr); }
-}
-
-function setOverride(type, y, m, val) {
-  var ov = getStore(type+'_override') || {};
-  ov[y+'-'+m] = val;
-  setStore(type+'_override', ov);
-  // si estaba borrado, "desborrar"
-  var del = getStore(type+'_deleted') || [];
-  var idx = del.indexOf(y+'-'+m);
-  if (idx>=0) { del.splice(idx,1); setStore(type+'_deleted', del); }
-}
-
-function deleteRow(type, y, m) {
-  var key = y+'-'+m;
-  // si es un extra puro, lo sacamos del extra
-  var extra = getStore(type+'_extra') || [];
-  var ne = extra.filter(function(r){ return !(r[0]===y&&r[1]===m); });
-  if (ne.length !== extra.length) setStore(type+'_extra', ne);
-  // quitar cualquier override
-  var ov = getStore(type+'_override') || {};
-  if (ov[key]!=null) { delete ov[key]; setStore(type+'_override', ov); }
-  // si era fila base, marcar como borrada
-  if (isBaseRow(type,y,m)) {
-    var del = getStore(type+'_deleted') || [];
-    if (del.indexOf(key)<0) { del.push(key); setStore(type+'_deleted', del); }
-  }
 }
 
 // ── FETCH REMOTO ──────────────────────────────────────────────────────────────
@@ -614,20 +571,6 @@ function renderIdxTable(type) {
   }
   var le=data[data.length-1];
   document.getElementById(type+'-last').textContent = le ? ('Último dato: '+fmtMes(le[0],le[1])+' = '+fmtN(le[2],dec)) : 'Sin datos';
-}
-
-function addIdx(type) {
-  var mesEl=document.getElementById('add-'+type+'-mes');
-  var valEl=document.getElementById('add-'+type+'-val');
-  var mes=mesEl.value; var val=parseFloat(valEl.value);
-  if (!mes||isNaN(val)||val<=0){ alert('Completá mes y valor.'); return; }
-  var parts=mes.split('-'); var y=parseInt(parts[0]),m=parseInt(parts[1]);
-  var data=type==='ripte'?ripteData:ipcData;
-  if (data.some(function(r){ return r[0]===y&&r[1]===m; })){ alert('Ya existe un valor para ese mes.'); return; }
-  saveExtra(type,[y,m,val]);
-  loadData();
-  renderIdxTable(type);
-  mesEl.value=''; valEl.value='';
 }
 
 // ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
