@@ -211,7 +211,7 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
 
       <div id="idxp-ripte">
         <p class="section-label">Índice RIPTE</p>
-        <div class="idx-scroll"><table class="idx-table"><thead><tr><th>Fecha</th><th>Valor</th><th></th><th style="text-align:right">Acciones</th></tr></thead><tbody id="ripte-tbody"></tbody></table></div>
+        <div class="idx-scroll"><table class="idx-table"><thead><tr><th>Fecha</th><th>Valor</th></tr></thead><tbody id="ripte-tbody"></tbody></table></div>
         <p class="last-upd" id="ripte-last"></p>
         <div class="add-form">
           <div class="field"><label style="font-size:12px">Mes</label><input type="month" id="add-ripte-mes"></div>
@@ -222,7 +222,7 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
 
       <div id="idxp-ipc" style="display:none">
         <p class="section-label">Índice IPC</p>
-        <div class="idx-scroll"><table class="idx-table"><thead><tr><th>Fecha</th><th>Valor</th><th></th><th style="text-align:right">Acciones</th></tr></thead><tbody id="ipc-tbody"></tbody></table></div>
+        <div class="idx-scroll"><table class="idx-table"><thead><tr><th>Fecha</th><th>Valor</th></tr></thead><tbody id="ipc-tbody"></tbody></table></div>
         <p class="last-upd" id="ipc-last"></p>
         <div class="add-form">
           <div class="field"><label style="font-size:12px">Mes</label><input type="month" id="add-ipc-mes"></div>
@@ -583,64 +583,21 @@ function calcAct(type) {
 }
 
 // ── ÍNDICES (gestión) ─────────────────────────────────────────────────────────
-var editingKey = { ripte:null, ipc:null };
+var editingKey = {};
 
 function renderIdxTable(type) {
   var data = type==='ripte'?ripteData:ipcData;
   var dec = type==='ripte'?2:4;
-  var override = getStore(type+'_override') || {};
   var tbody = document.getElementById(type+'-tbody');
   tbody.innerHTML='';
   for (var i=data.length-1;i>=0;i--) {
     var r=data[i];
-    var key = r[0]+'-'+r[1];
     var tr=document.createElement('tr');
-    var isExtra = !isBaseRow(type, r[0], r[1]);
-    var isEdited = override[key]!=null;
-    if (isExtra) tr.className='new-row';
-    else if (isEdited) tr.className='edited-row';
-
-    if (editingKey[type] === key) {
-      tr.innerHTML =
-        '<td>'+fmtMes(r[0],r[1])+'</td>'
-        +'<td colspan="2" style="text-align:right"><input id="edit-input-'+type+'" type="number" step="0.0001" value="'+r[2]+'" style="width:130px;text-align:right;padding:4px 8px;border:0.5px solid #888780;border-radius:6px;font-size:13px;font-family:inherit"></td>'
-        +'<td style="text-align:right;white-space:nowrap">'
-          +'<button class="btn sm primary" onclick="saveEdit(\''+type+'\','+r[0]+','+r[1]+')">Guardar</button> '
-          +'<button class="btn sm" onclick="cancelEdit(\''+type+'\')">Cancelar</button>'
-        +'</td>';
-    } else {
-      tr.innerHTML =
-        '<td>'+fmtMes(r[0],r[1])+'</td>'
-        +'<td>'+fmtN(r[2],dec)+'</td>'
-        +'<td style="color:#b4b2a9;font-size:11px">'+(isExtra?'agregado':(isEdited?'corregido':''))+'</td>'
-        +'<td style="text-align:right;white-space:nowrap">'
-          +'<button class="btn sm" onclick="startEdit(\''+type+'\','+r[0]+','+r[1]+')" title="Editar"><i class="ti ti-edit"></i></button> '
-          +'<button class="btn sm danger" onclick="delIdx(\''+type+'\','+r[0]+','+r[1]+')" title="Eliminar"><i class="ti ti-trash"></i></button>'
-        +'</td>';
-    }
+    tr.innerHTML='<td>'+fmtMes(r[0],r[1])+'</td><td>'+fmtN(r[2],dec)+'</td>';
     tbody.appendChild(tr);
   }
   var le=data[data.length-1];
   document.getElementById(type+'-last').textContent = le ? ('Último dato: '+fmtMes(le[0],le[1])+' = '+fmtN(le[2],dec)) : 'Sin datos';
-}
-
-function startEdit(type, y, m) { editingKey[type] = y+'-'+m; renderIdxTable(type); var inp=document.getElementById('edit-input-'+type); if(inp){inp.focus();inp.select();} }
-function cancelEdit(type) { editingKey[type] = null; renderIdxTable(type); }
-function saveEdit(type, y, m) {
-  var inp = document.getElementById('edit-input-'+type);
-  var val = parseFloat(inp.value);
-  if (isNaN(val) || val<=0) { alert('Valor inválido.'); return; }
-  setOverride(type, y, m, val);
-  editingKey[type] = null;
-  loadData();
-  renderIdxTable(type);
-}
-
-function delIdx(type, y, m) {
-  if (!confirm('¿Eliminar el valor de '+fmtMes(y,m)+'?')) return;
-  deleteRow(type, y, m);
-  loadData();
-  renderIdxTable(type);
 }
 
 function addIdx(type) {
@@ -650,7 +607,7 @@ function addIdx(type) {
   if (!mes||isNaN(val)||val<=0){ alert('Completá mes y valor.'); return; }
   var parts=mes.split('-'); var y=parseInt(parts[0]),m=parseInt(parts[1]);
   var data=type==='ripte'?ripteData:ipcData;
-  if (data.some(function(r){ return r[0]===y&&r[1]===m; })){ alert('Ya existe un valor para ese mes. Usá el botón editar para modificarlo.'); return; }
+  if (data.some(function(r){ return r[0]===y&&r[1]===m; })){ alert('Ya existe un valor para ese mes.'); return; }
   saveExtra(type,[y,m,val]);
   loadData();
   renderIdxTable(type);
