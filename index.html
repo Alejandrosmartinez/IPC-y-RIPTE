@@ -174,15 +174,16 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
   <!-- ── ART. 55 LEY 27.802 ── -->
   <div id="panel-act-ipc" class="panel">
     <div class="card">
-      <p class="section-label">Datos — Art. 55 Ley 27.802</p>
+      <p class="section-label">Datos — Art. 55 Ley 27.802 / Actualización IPC</p>
       <div class="grid-2">
-        <div class="field"><label>Fecha distracto</label><input type="date" id="ai-distracto" oninput="calcArt55()"></div>
-        <div class="field"><label>Fecha liquidación</label><input type="date" id="ai-liquidacion" oninput="calcArt55()"></div>
+        <div class="field"><label>Fecha inicial</label><input type="date" id="ai-distracto" oninput="calcArt55()"></div>
+        <div class="field"><label>Fecha final</label><input type="date" id="ai-liquidacion" oninput="calcArt55()"></div>
         <div class="field"><label>Capital ($)</label><input type="text" id="ai-capital" placeholder="Ej: 1.775.664,12" oninput="calcArt55()"></div>
-        <div class="field"><label>Estado índices <span class="badge" id="tp-idx-badge">—</span></label><input type="text" id="tp-idx-status" readonly placeholder="Tocá Actualizar para cargar"></div>
+        <div class="field"><label>Tasa de interés anual (%) <span class="badge">opcional</span></label><input type="text" id="ai-tasa-libre" placeholder="Ej: 3 o 6" oninput="calcArt55()"></div>
+        <div class="field" style="grid-column:1/-1"><label>Estado índices <span class="badge" id="tp-idx-badge">—</span></label><input type="text" id="tp-idx-status" readonly placeholder="Tocá Actualizar para cargar"></div>
       </div>
       <div class="info-bar" id="ai-infobar" style="display:none;flex-wrap:wrap;gap:14px">
-        <div class="info-item">IPC distracto: <b id="ai-id">—</b></div>
+        <div class="info-item">IPC inicial: <b id="ai-id">—</b></div>
         <div class="info-item">IPC vigente: <b id="ai-iv">—</b></div>
         <div class="info-item">Coef. IPC: <b id="ai-coef">—</b></div>
         <div class="info-item">Días: <b id="ai-dias">—</b></div>
@@ -193,8 +194,9 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
       </div>
     </div>
     <div class="card" id="ai-results" style="display:none">
-      <p class="section-label">Resultado — Art. 55 Ley 27.802</p>
+      <p class="section-label" id="ai-results-label">Resultado</p>
       <div class="result-block">
+        <div class="result-row" id="row-ipc-tasa" style="display:none"><span id="lbl-ipc-tasa">IPC + tasa libre</span><span class="rval" id="ai-ipc-tasa">—</span></div>
         <div class="result-row" id="row-pasiva43"><span>Inc. a — Tasa pasiva Com. 14290 (CPACF / Justicia)</span><span class="rval" id="ai-pasiva43">—</span></div>
         <div class="result-row" id="row-pasiva12"><span>Inc. a — Tasa pasiva Res. 45/26 BCRA (Ley 27.802)</span><span class="rval" id="ai-pasiva12">—</span></div>
         <div class="result-row"><span>Inc. b — Techo (IPC + 3% anual s/ cap. actualizado)</span><span class="rval" id="ai-techo">—</span></div>
@@ -838,6 +840,9 @@ function calcArt55() {
 
   if (!idxIpcD) { document.getElementById('ai-results').style.display='none'; return; }
 
+  // Tasa libre opcional
+  var tasaLibre = parseMonto(document.getElementById('ai-tasa-libre').value);
+
   // Inc. b — Techo
   var coefIpc = idxIpcV / idxIpcD;
   var capAct = capital * coefIpc;
@@ -845,8 +850,21 @@ function calcArt55() {
   var piso = techo * 0.67;
 
   document.getElementById('ai-results').style.display = 'block';
+  document.getElementById('ai-results-label').textContent = tasaLibre ? 'Resultado — IPC + tasa libre / Art. 55 Ley 27.802' : 'Resultado — Art. 55 Ley 27.802';
   document.getElementById('ai-techo').textContent = fmt(techo);
   document.getElementById('ai-piso').textContent = fmt(piso);
+
+  // Tasa libre: capital × coef_IPC × (1 + tasa/365 × días)
+  var rowTasaLibre = document.getElementById('row-ipc-tasa');
+  if (tasaLibre) {
+    var resultadoTasaLibre = capAct * (1 + tasaLibre/100/365 * dias);
+    document.getElementById('lbl-ipc-tasa').textContent = 'IPC + ' + fmtN(tasaLibre,2) + '% anual s/ cap. actualizado';
+    document.getElementById('ai-ipc-tasa').textContent = fmt(resultadoTasaLibre);
+    rowTasaLibre.style.display = '';
+    rowTasaLibre.style.background = '#f1efe8';
+  } else {
+    rowTasaLibre.style.display = 'none';
+  }
 
   // Helper para mostrar cada serie
   function mostrarSerie(pasiva, rowId, pasivaId, veredictoId, label) {
