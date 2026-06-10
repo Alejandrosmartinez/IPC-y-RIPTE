@@ -95,7 +95,8 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
     <button class="tab active" onclick="switchTab('ibm',this)">IBM</button>
     <button class="tab" onclick="switchTab('ibm-dnu',this)">IBM (DNU)</button>
     <button class="tab" onclick="switchTab('act-ripte',this)">Actualizar RIPTE</button>
-    <button class="tab" onclick="switchTab('act-ipc',this)">Art. 55 Ley 27.802</button>
+    <button class="tab" onclick="switchTab('act-ipc',this)">Actualizar IPC / Art. 55</button>
+    <button class="tab" onclick="switchTab('lrt',this)">LRT</button>
     <button class="tab" onclick="switchTab('indices',this)">Índices</button>
   </div>
 
@@ -209,6 +210,48 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
     </div>
   </div>
 
+  <!-- ── LRT ── -->
+  <div id="panel-lrt" class="panel">
+    <div class="card">
+      <p class="section-label">Cálculo LRT — Art. 14 ap. 2 inc. a) Ley 24.557</p>
+      <div class="grid-2">
+        <div class="field" style="grid-column:1/-1">
+          <label>Tipo de contingencia</label>
+          <div style="display:flex;gap:12px;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:400;cursor:pointer">
+              <input type="radio" name="lrt-tipo" id="lrt-ocasion" value="ocasion" onchange="calcLRT()" checked>
+              Accidente en ocasión / Enfermedad profesional
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:400;cursor:pointer">
+              <input type="radio" name="lrt-tipo" id="lrt-itinere" value="itinere" onchange="calcLRT()">
+              Accidente in itinere
+            </label>
+          </div>
+        </div>
+        <div class="field"><label>Fecha accidente / primera manifestación</label><input type="date" id="lrt-fecha" oninput="calcLRT()"></div>
+        <div class="field"><label>Edad al momento del accidente (años)</label><input type="text" id="lrt-edad" placeholder="Ej: 35" oninput="calcLRT()"></div>
+        <div class="field"><label>IBM ($)</label><input type="text" id="lrt-ibm" placeholder="Ej: 250.000,00" oninput="calcLRT()"></div>
+        <div class="field"><label>Incapacidad (%)</label><input type="text" id="lrt-incapacidad" placeholder="Ej: 17" oninput="calcLRT()"></div>
+      </div>
+      <div class="info-bar" id="lrt-infobar" style="display:none;flex-wrap:wrap;gap:14px">
+        <div class="info-item">Piso vigente (100%): <b id="lrt-piso100">—</b></div>
+        <div class="info-item">Piso proporcional: <b id="lrt-piso-prop">—</b></div>
+        <div class="info-item">Adicional 20%: <b id="lrt-adicional-lbl">—</b></div>
+      </div>
+    </div>
+    <div class="card" id="lrt-results" style="display:none">
+      <p class="section-label">Resultado</p>
+      <div class="result-block">
+        <div class="result-row"><span>Fórmula art. 14.2.a (53 × IBM × %incap × 65/edad)</span><span class="rval" id="lrt-formula">—</span></div>
+        <div class="result-row"><span id="lrt-piso-lbl">Piso SRT proporcional</span><span class="rval" id="lrt-piso-out">—</span></div>
+        <div class="result-row" id="lrt-row-base" style="font-weight:500"><span id="lrt-base-lbl">Base indemnizatoria</span><span class="rval" id="lrt-base">—</span></div>
+        <div class="result-row" id="lrt-row-20" style="display:none"><span>Adicional 20% art. 3 Ley 26.773</span><span class="rval" id="lrt-20">—</span></div>
+        <div class="result-row total"><span>Total</span><span class="rval" id="lrt-total">—</span></div>
+      </div>
+      <div id="lrt-veredicto" style="margin-top:10px;padding:10px 13px;border-radius:8px;font-size:13px;font-weight:500"></div>
+    </div>
+  </div>
+
   <!-- ── ÍNDICES ── -->
   <div id="panel-indices" class="panel">
     <div class="card">
@@ -236,6 +279,7 @@ h1 { font-size: 18px; font-weight: 500; margin-bottom: 3px; }
 // ── DATOS BASE ────────────────────────────────────────────────────────────────
 var RIPTE_BASE=[[2011,1,449.82],[2011,2,459.18],[2011,3,490.31],[2011,4,496.42],[2011,5,515.55],[2011,6,522.98],[2011,7,539.38],[2011,8,557.23],[2011,9,575.47],[2011,10,584.75],[2011,11,599.28],[2011,12,603.55],[2012,1,611.61],[2012,2,628.82],[2012,3,652.87],[2012,4,683.89],[2012,5,704.54],[2012,6,707.89],[2012,7,733.06],[2012,8,739.38],[2012,9,751.84],[2012,10,770.83],[2012,11,789.52],[2012,12,798.5],[2013,1,807.41],[2013,2,834.43],[2013,3,856.21],[2013,4,872.62],[2013,5,902.57],[2013,6,912.82],[2013,7,934.63],[2013,8,943.67],[2013,9,964.67],[2013,10,964.67],[2013,11,990.63],[2013,12,999.43],[2014,1,1004.15],[2014,2,1057.21],[2014,3,1101.28],[2014,4,1160.96],[2014,5,1176.75],[2014,6,1188.08],[2014,7,1245.32],[2014,8,1251.18],[2014,9,1302.28],[2014,10,1340.85],[2014,11,1340.85],[2014,12,1366.32],[2015,1,1371.4],[2015,2,1418.58],[2015,3,1471.07],[2015,4,1494.77],[2015,5,1549.59],[2015,6,1612.17],[2015,7,1661.48],[2015,8,1668.64],[2015,9,1712.64],[2015,10,1737.68],[2015,11,1774.68],[2015,12,1806.09],[2016,1,1808.6],[2016,2,1888.34],[2016,3,1940.55],[2016,4,2022.16],[2016,5,2022.16],[2016,6,2089.18],[2016,7,2170.43],[2016,8,2196.53],[2016,9,2247.93],[2016,10,2293.97],[2016,11,2334.36],[2016,12,2364.94],[2017,1,2405.87],[2017,2,2455.57],[2017,3,2547.29],[2017,4,2589.02],[2017,5,2632.39],[2017,6,2682.68],[2017,7,2799.18],[2017,8,2823.33],[2017,9,2873.15],[2017,10,2953.98],[2017,11,2992.14],[2017,12,3006.32],[2018,1,3078.15],[2018,2,3136.49],[2018,3,3208.74],[2018,4,3298.55],[2018,5,3353.5],[2018,6,3383.14],[2018,7,3461.52],[2018,8,3540.95],[2018,9,3603.23],[2018,10,3789.62],[2018,11,3855.86],[2018,12,3925.11],[2019,1,4042],[2019,2,4198.76],[2019,3,4444.6],[2019,4,4533.03],[2019,5,4676.25],[2019,6,4753.19],[2019,7,4948.27],[2019,8,5039.93],[2019,9,5199.08],[2019,10,5467.59],[2019,11,5554.15],[2019,12,5666.48],[2020,1,6066.07],[2020,2,6445.13],[2020,3,6500.72],[2020,4,6510.18],[2020,5,6521.87],[2020,6,6670.93],[2020,7,6908.52],[2020,8,6945.86],[2020,9,7076.47],[2020,10,7401.81],[2020,11,7495.03],[2020,12,7643.41],[2021,1,7784.1],[2021,2,8263.33],[2021,3,8665.19],[2021,4,9201.59],[2021,5,9311.61],[2021,6,9660.13],[2021,7,10089.96],[2021,8,10326.11],[2021,9,10762.48],[2021,10,11148.95],[2021,11,11497.72],[2021,12,11726.3],[2022,1,12271.35],[2022,2,12849.2],[2022,3,13855.82],[2022,4,14677.19],[2022,5,15270.36],[2022,6,16149.76],[2022,7,17009.6],[2022,8,17786.79],[2022,9,18908.07],[2022,10,19938.61],[2022,11,21055.73],[2022,12,22194.74],[2023,1,23041.17],[2023,2,24980.16],[2023,3,27419.24],[2023,4,30116.61],[2023,5,31984.22],[2023,6,34583.73],[2023,7,37148.07],[2023,8,39326.69],[2023,9,43045.75],[2023,10,48087.89],[2023,11,51102.4],[2023,12,55356.61],[2024,1,63468.76],[2024,2,70754.17],[2024,3,80678.57],[2024,4,93671.26],[2024,5,100527.29],[2024,6,106664.97],[2024,7,113694.76],[2024,8,118007.3],[2024,9,122891.98],[2024,10,131045.09],[2024,11,134754.34],[2024,12,137497.9],[2025,1,141124.78],[2025,2,149777.43],[2025,3,155852.91],[2025,4,160321.72],[2025,5,163299.84],[2025,6,167811.87],[2025,7,172674.89],[2025,8,174917.11],[2025,9,177378.55],[2025,10,182089.61],[2025,11,184238.99],[2025,12,186718.83],[2026,1,188181.62],[2026,2,198241.7],[2026,3,202963.2]];
 var IPC_BASE=[[2016,12,100],[2017,1,101.6],[2017,2,103.7],[2017,3,106.1],[2017,4,109],[2017,5,110.5],[2017,6,111.8],[2017,7,113.8],[2017,8,115.4],[2017,9,117.6],[2017,10,119.4],[2017,11,121],[2017,12,124.8],[2018,1,127],[2018,2,130.1],[2018,3,133.1],[2018,4,136.8],[2018,5,139.6],[2018,6,144.8],[2018,7,149.3],[2018,8,155.1],[2018,9,165.2],[2018,10,174.1],[2018,11,179.6],[2018,12,184.3],[2019,1,189.6],[2019,2,196.8],[2019,3,206],[2019,4,213.1],[2019,5,219.6],[2019,6,225.5],[2019,7,230.5],[2019,8,239.6],[2019,9,253.7],[2019,10,262.1],[2019,11,273.2],[2019,12,283.4],[2020,1,289.8],[2020,2,295.7],[2020,3,305.6],[2020,4,310.1],[2020,5,314.9],[2020,6,322],[2020,7,328.2],[2020,8,337.1],[2020,9,346.6],[2020,10,359.7],[2020,11,371],[2020,12,385.9],[2021,1,401.5],[2021,2,415.9],[2021,3,435.9],[2021,4,453.7],[2021,5,468.7],[2021,6,483.6],[2021,7,498.1],[2021,8,510.4],[2021,9,528.5],[2021,10,547.1],[2021,11,560.9],[2021,12,582.5],[2022,1,605],[2022,2,633.4],[2022,3,676.1],[2022,4,716.9],[2022,5,753.1],[2022,6,793],[2022,7,851.8],[2022,8,911.1],[2022,9,967.3],[2022,10,1028.7],[2022,11,1079.3],[2022,12,1134.6],[2023,1,1203],[2023,2,1282.7],[2023,3,1381.2],[2023,4,1497.2],[2023,5,1613.6],[2023,6,1709.6],[2023,7,1818.1],[2023,8,2044.3],[2023,9,2304.9],[2023,10,2496.3],[2023,11,2816.1],[2023,12,3533.2],[2024,1,4261.5],[2024,2,4825.8],[2024,3,5357.1],[2024,4,5830.2],[2024,5,6073.7],[2024,6,6351.7],[2024,7,6607.7],[2024,8,6883.4412],[2024,9,7122.24],[2024,10,7313.9542],[2024,11,7491.4314],[2024,12,7694],[2025,1,7864.1257],[2025,2,8052.99],[2025,3,8353.3158],[2025,4,8585.6078],[2025,5,8714.48],[2025,6,8855.5681],[2025,7,9023.97],[2025,8,9193.24],[2025,9,9384.0922],[2025,10,9603.8623],[2025,11,9841.3581],[2025,12,10121.3715],[2026,1,10413.0309],[2026,2,10714.6255],[2026,3,11077.0608],[2026,4,11363.0904]];
+var PISOS_ART14_BASE={"2012-10-23":369630,"2013-03-01":416943,"2013-09-01":476649,"2014-03-01":521883,"2014-09-01":620414,"2015-03-01":713476,"2015-09-01":841856,"2016-03-01":943119,"2016-09-01":1090945,"2017-03-01":1234944,"2017-09-01":1400864,"2018-03-01":1569865,"2018-09-01":1766636,"2019-03-01":2049647,"2019-09-01":2482061,"2020-03-01":2958970,"2020-09-01":3483482,"2021-03-01":3991300,"2021-09-01":5044408,"2022-03-01":6123338,"2022-09-01":8433218,"2023-03-01":11589837,"2023-09-01":18059225,"2024-03-01":28906583,"2024-09-01":55699217,"2025-03-01":71799818,"2025-09-01":87629423,"2026-03-01":97502420};
 
 // ── ESTADO ────────────────────────────────────────────────────────────────────
 // Modelo de almacenamiento (localStorage):
@@ -266,6 +310,9 @@ function buildData(base, type) {
 function loadData() {
   ripteData = buildData(RIPTE_BASE, 'ripte');
   ipcData   = buildData(IPC_BASE, 'ipc');
+  // Pisos SRT — cargar desde localStorage si existen, si no usar los del PISOS_BASE embebido
+  var stored = getStore('pisos_art14');
+  pisosArt14 = stored || PISOS_ART14_BASE;
 }
 
 function saveExtra(type, row) {
@@ -322,6 +369,16 @@ function fetchIndices() {
       diag.ripteAdded = json.ripte ? normalizeObj('ripte', json.ripte, delR) : 0;
       diag.ipcAdded   = json.ipc   ? normalizeObj('ipc', json.ipc, delI)   : 0;
       if (diag.ripteAdded>0 || diag.ipcAdded>0) loadData();
+      // Pisos SRT
+      if (json.pisos_art14) {
+        var p = {};
+        Object.keys(json.pisos_art14).forEach(function(k){
+          if (k.charAt(0)!=='_') p[k] = json.pisos_art14[k];
+        });
+        setStore('pisos_art14', p);
+        pisosArt14 = p;
+        calcLRT();
+      }
       diag.ok = true;
       finishSync();
     })
@@ -562,6 +619,96 @@ function calcAct(type) {
   if (type==='ipc') document.getElementById('ai-piso').textContent = fmt(cap100*0.67);
   document.getElementById(px+'-cap70').textContent = fmt(cap70);
   document.getElementById(px+'-cap100').textContent = fmt(cap100);
+}
+
+// ── LRT — Art. 14 ap. 2 inc. a) ──────────────────────────────────────────────
+var pisosArt14 = {}; // se carga desde indices.json
+
+function getPisoArt14(fechaStr) {
+  // Busca el piso vigente a la fecha del accidente
+  var keys = Object.keys(pisosArt14).filter(function(k){ return k !== '_nota'; }).sort();
+  var piso = null;
+  for (var i=0; i<keys.length; i++) {
+    if (keys[i] <= fechaStr) piso = pisosArt14[keys[i]];
+    else break;
+  }
+  return piso;
+}
+
+function calcLRT() {
+  var fechaStr = document.getElementById('lrt-fecha').value;
+  var edad = parseMonto(document.getElementById('lrt-edad').value);
+  var ibm = parseMonto(document.getElementById('lrt-ibm').value);
+  var incap = parseMonto(document.getElementById('lrt-incapacidad').value);
+  var esOcasion = document.getElementById('lrt-ocasion').checked;
+
+  var resDiv = document.getElementById('lrt-results');
+  if (!fechaStr || !edad || !ibm || !incap || edad <= 0 || incap <= 0 || incap > 100) {
+    resDiv.style.display = 'none';
+    document.getElementById('lrt-infobar').style.display = 'none';
+    return;
+  }
+
+  // Fórmula art. 14.2.a
+  var formula = 53 * ibm * (incap/100) * (65/edad);
+
+  // Piso SRT vigente a la fecha
+  var piso100 = getPisoArt14(fechaStr);
+  var pisoProp = piso100 ? piso100 * (incap/100) : null;
+
+  // Base: el mayor entre fórmula y piso
+  var usaPiso = pisoProp !== null && pisoProp > formula;
+  var base = usaPiso ? pisoProp : formula;
+
+  // 20% solo para accidente en ocasión / enfermedad profesional
+  var adicional20 = esOcasion ? base * 0.20 : 0;
+  var total = base + adicional20;
+
+  // Infobar
+  document.getElementById('lrt-infobar').style.display = 'flex';
+  document.getElementById('lrt-piso100').textContent = piso100 ? fmt(piso100) : 'Sin dato para esa fecha';
+  document.getElementById('lrt-piso-prop').textContent = pisoProp ? fmt(pisoProp) : '—';
+  document.getElementById('lrt-adicional-lbl').textContent = esOcasion ? 'Sí (20%)' : 'No (in itinere)';
+
+  // Resultados
+  resDiv.style.display = 'block';
+  document.getElementById('lrt-formula').textContent = fmt(formula);
+  document.getElementById('lrt-piso-lbl').textContent = 'Piso SRT proporcional (' + fmtN(incap,2) + '% de ' + (piso100 ? fmt(piso100) : '—') + ')';
+  document.getElementById('lrt-piso-out').textContent = pisoProp ? fmt(pisoProp) : '—';
+
+  // Resaltar la fila que aplica
+  document.getElementById('lrt-row-base').style.background = '';
+  document.getElementById('lrt-formula').parentElement.style.background = '';
+  document.getElementById('lrt-piso-out').parentElement.style.background = '';
+  if (usaPiso) {
+    document.getElementById('lrt-piso-out').parentElement.style.background = '#eaf3de';
+    document.getElementById('lrt-base-lbl').textContent = 'Base indemnizatoria (piso SRT)';
+  } else {
+    document.getElementById('lrt-formula').parentElement.style.background = '#eaf3de';
+    document.getElementById('lrt-base-lbl').textContent = 'Base indemnizatoria (fórmula)';
+  }
+  document.getElementById('lrt-base').textContent = fmt(base);
+
+  var row20 = document.getElementById('lrt-row-20');
+  if (esOcasion) {
+    row20.style.display = '';
+    document.getElementById('lrt-20').textContent = fmt(adicional20);
+  } else {
+    row20.style.display = 'none';
+  }
+  document.getElementById('lrt-total').textContent = fmt(total);
+
+  var verd = document.getElementById('lrt-veredicto');
+  if (!piso100) {
+    verd.textContent = 'Sin piso SRT cargado para esa fecha. Verificá que indices.json esté actualizado.';
+    verd.style.background = '#fcebeb'; verd.style.color = '#a32d2d';
+  } else if (usaPiso) {
+    verd.textContent = 'La fórmula (' + fmt(formula) + ') es inferior al piso SRT proporcional. Se aplica el piso.' + (esOcasion ? ' Sobre el piso se adiciona el 20%.' : '');
+    verd.style.background = '#faeeda'; verd.style.color = '#1a1a18';
+  } else {
+    verd.textContent = 'La fórmula supera el piso SRT. Se aplica el resultado de la fórmula.' + (esOcasion ? ' Sobre la fórmula se adiciona el 20%.' : '');
+    verd.style.background = '#eaf3de'; verd.style.color = '#1a1a18';
+  }
 }
 
 // ── ÍNDICES (gestión) ─────────────────────────────────────────────────────────
