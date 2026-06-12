@@ -299,7 +299,8 @@
     "2026-01": 10413.0309,
     "2026-02": 10714.6255,
     "2026-03": 11077.0608,
-    "2026-04": 11363.0904
+    "2026-04": 11363.0904,
+    "2026-05": 11607.3937
   },
   "pisos_art14": {
     "_nota": "Piso por 100% incapacidad. Para el caso concreto multiplicar por el porcentaje. Actualizar cada marzo y septiembre con la resolución SRT. Valores en pesos.",
